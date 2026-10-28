@@ -1,6 +1,6 @@
 //
 //  USView.h
-//
+//  
 //
 //  Created by mrq on 2020/8/21.
 //  Copyright © 2020 MrQ. All rights reserved.
@@ -24,11 +24,10 @@ typedef enum : NSUInteger {
 
 /// 注册观察者
 - (void)registeOberver: (id)observer;
-/// 注销观察者 Log out of the observer
+/// 注销观察者
 - (void)deregisterObserver: (id)observer;
 
-/// 初始化视图，带默认UI
-/// Set USView frame with default UI
+/// 初始化视图，带默认UI Set USView frame with default UI
 - (void)setViewFrame:(CGRect)frame;
 
 /**
@@ -45,10 +44,11 @@ typedef enum : NSUInteger {
 /// 获取超声视图  only ultrasound View
 - (UIView*)getUltrasoundView;
 
-/// 初始化视图，只有超声视图，不含其他
-/// Set  ultrasoundView frame  only ultrasound view, excluding others
+
+/// 初始化视图，只有超声视图，不含其他 Set  ultrasoundView frame  only ultrasound view, excluding others
 - (void)setUltrasoundViewFrame:(CGRect)frame;
 
+- (void)deallocView;
 
 #pragma mark - 预设
 
@@ -86,6 +86,9 @@ typedef enum : NSUInteger {
 */
 - (void)visibleInformation:(BOOL)visible;
 
+- (void)visiblePatientInformation:(BOOL)visible;
+- (void)visibleParamsInformation:(BOOL)visible;
+
 /**
 * 是否显示比例尺
 *    @param   visible   default YES
@@ -121,6 +124,12 @@ typedef enum : NSUInteger {
 - (BOOL)isLive;
 
 - (NSString*)connProbeSSID;
+
+/**
+ NSString *probeSSID = [self.usKit connProbeSSID];
+ [self.usKit addWiFiWhiteListWithProbeSSID:probeSSID];
+ */
+- (void)addWiFiWhiteListWithProbeSSID:(NSString*)probeSSID;
 
 @end
 

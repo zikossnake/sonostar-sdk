@@ -58,17 +58,19 @@ typedef enum : NSUInteger {
 - (void)onProbeLive:(BOOL)isLive;
 
 /**
-*    实时超声图像消息 Real time image proxy message
+*    实时超声图像消息 (屏幕尺寸版本) Real time image proxy message (size same screen)
 *    如果不需要获取实时图像，请不要实现此代理方法，因为会一直截屏耗费资源
 *    @param image 图像
 *    @param mode  模式
-*    @param scale   比例，单位  毫米 / 像素
-*    @param velocity PW速度， 单位 厘米 / 秒，此值代表PW图像区域总高度转换的速度
+*    @param scale   比例，单位  毫米 / 像素 (mm/pixel)
+*    @param velocity PW速度， 单位 厘米 / 秒 (cm/s) ，此值代表PW图像区域总高度转换的速度
 *  ( don't implement this proxy method if you do not need to obtain real-time images)
 */
 - (void)onRealTimeImage:(UIImage*)image mode:(USMode)mode scale:(float)scale velocity:(float)velocity;
 
 /**
+*    实时超声图像消息 (裁剪版本) (fit cut size)
+*    如果不需要获取实时图像，请不要实现此代理方法，因为会一直截屏耗费资源
 *    Real Time  B mode Origin Capture ，only B Mode image and scale  ( mm / pixel )
  ( don't implement this proxy method if you do not need to obtain real-time images)
 */
@@ -77,7 +79,6 @@ typedef enum : NSUInteger {
 
 /// 双头探头切换消息
 - (void)onSwitchProbe:(PROBE_TYPE)type;
-
 
 /**
 *   click "saveImage" button， agent message returned after saving successfully
@@ -88,6 +89,8 @@ typedef enum : NSUInteger {
 /**
  *   click "saveVideo" button， agent message returned after saving successfully
  *    @param    videoData   ultrasound Video
+ *   NSString *videoPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Documents"]stringByAppendingPathComponent:@"test.mp4"];
+ *   [videoData writeToFile:videoPath atomically:YES];
  */
 - (void)onSaveVideo:(NSData *)videoData patientJson:(NSString*)patientJson;
 
@@ -100,18 +103,28 @@ typedef enum : NSUInteger {
 @end
 
 @protocol USKitControl <NSObject>
+@optional
+
+- (NSString*)probeSN;
+
+- (void)cineLoopPlay;
+- (void)cineLoopPause;
+- (BOOL)cineLoopIsPlay;
+- (void)setCineLoopIndex:(NSUInteger)index;
+
+- (BOOL)saveImage;
+- (BOOL)saveVideo;
 
 #pragma mark - 参数调节相关
 /**
-*   设置检查模式 （预设参数）  ( Preset parameters )
+*   设置检查模式
 *    @param   type   EXAM_TYPE
 */
 - (void)setExamination:(EXAM_TYPE)type;
 
-/// Get  Probe Type
 - (PROBE_TYPE)probeType;
 
-/// 模式设置 Set Mode
+/// 模式设置
 - (void)setUSMode:(USMode)mode;
 - (USMode)getUSMode;
 
@@ -119,103 +132,104 @@ typedef enum : NSUInteger {
 
 /// 深度调节 0 ~ 3
 - (void)setDepthIndex:(int)depthIndex;
-/// 获取深度， (单位mm)
+- (int)getDepthIndex;
+/// 获取 当前深度， (单位mm)
 - (int)getDepth;
-/// List probe  support depth
+/// 获取深度列表  (mm)
 - (NSArray<NSString*>*)getDepthList;
 
 /// 增益调节 30 ~ 105
 - (void)setGain:(int)gain;
 - (int)getGain;
 
-/// 图像增强（降噪） 0 ~ 3  Image Enhance / Denoise
+/// 图像增强（降噪） 0 ~ 3
 - (void)setEnhanceLevel:(int)enhanceLevel;
 - (int)getEnhanceLevel;
 
-/// 动态范围 40 ~ 110   image  Dynamic Range
+/// 动态范围 40 ~ 110
 - (void)setDynamicRange:(int)dynamicRange;
 - (int)getDynamicRange;
 
-/// Harmonic imaging
-/// Whether harmonic imaging is available
+/// 谐波成像
 - (BOOL)harmonicEnable;
-///  Frequency list
 - (NSArray<NSString*>*)getFreqList;
-
 - (void)setHarmonic:(BOOL)harmonic;
-/// Harmonic imaging Status
 - (BOOL)getHarmonic;
 
-/// Set focus position  0 ~ 3
+/// 焦点位置 0 ~ 3
 - (void)setFocusPos:(int)focusPos;
 - (int)getFocusPos;
 
-/// V  gain adjustment,  gain: 0 ~ 255,   index: 0~7
+/// 局部增益调节 gain: 0 ~ 255,   index: 0~7
 - (void)setVGain:(int)gain index:(int)index;
 - (int)getVGain:(int)index;
 
-/// Whether spatial composites are supported /   image compound
+/// 是否支持空间复合
 - (BOOL)compoundEnable;
-/// Set up a spatial compound
+/// 设置空间复合
 - (void)setCompound:(BOOL)compound;
 - (BOOL)getCompound;
 
 
-// Color / PDI  Adjust
+// 彩超调节  Color / PDI
 
-/// Set Color Gain 0 ~ 100
+/// 采样框调节， YES：Move， NO：Size
+- (void)setColorSampleQuadsIsMove:(BOOL)isMove;
+- (BOOL)getColorSampleQuadsIsMove;
+
+/// 彩超增益 0 ~ 100
 - (void)setColorGain:(int)gain;
 - (int)getColorGain;
 
-/// To get the color ultrasound Steer series, if there are 3 levels, the following means that you can set 0 ~ 2, if <=1, it means that you can't set it
+/// 获取彩超 Steer 级数， 如果有3级，下面代表可以设置 0 ～ 2， 如果<=1，则代表不能设置
 - (int)getColorSteerLevels;
 - (NSArray<NSString*>*)getColorSteerList;
-/// Set Color Steer
+/// 设置彩超 Steer
 - (void)setColorSteerIndex:(int)index;
 - (int)getColorSteerIndex;
 
-///  To get the color ultrasound PRF level, if there are 3 levels, the following means that you can set 0 ~ 2, if <=1, it means that you can't set it
+/// 获取彩超 PRF 级数， 如果有3级，下面代表可以设置 0 ～ 2， 如果<=1，则代表不能设置
 - (int)getColorPRFLevels;
 - (NSArray<NSString*>*)getColorPRFList;
-/// Set Color PRF
+/// 设置彩超 PRF
 - (void)setColorPRFIndex:(int)index;
 - (int)getColorPRFIndex;
 
-/// Get the Wall filtering level of color ultrasound, if there are 3 levels, the following means that you can set 0 ~ 2, if <=1, it means that you can't set it
+/// 获取彩超 WF 级数， 如果有3级，下面代表可以设置 0 ～ 2， 如果<=1，则代表不能设置
 - (int)getColorWFLevels;
-/// Set Color WF   ( Wall filtering  )
+/// 设置彩超 WF
 - (void)setColorWFIndex:(int)index;
 - (int)getColorWFIndex;
 
-/// Whether the point is within the Color sampling area or not, the converted relative coordinates need to be used
+/// 点是否在 Color 采样区内，需要使用转换过的相对坐标
 - (BOOL)onTouchInColor:(CGPoint)point;
 
-// PW Adjust
+// PW 调节
 
-/// Set PW Gain 0 ~ 100
+/// PW增益 0 ~ 100
 - (void)setPWGain:(int)gain;
 - (int)getPWGain;
 
-/// Get the PW Steer level, if there are 3 levels, the following means that you can set 0 ~ 2, if <=1, it means that you can't set it
+/// 获取PW Steer 级数， 如果有3级，下面代表可以设置 0 ～ 2， 如果<=1，则代表不能设置
 - (int)getPWSteerLevels;
 - (NSArray<NSString*>*)getPWSteerList;
-/// Set PW Steer
+/// 设置PW Steer
 - (void)setPWSteerIndex:(int)index;
 - (int)getPWSteerIndex;
 
-/// Get the PW PRF level, if there are 3 levels, the following means that you can set 0 ~ 2, if <=1, it means that you can't set it
+/// 获取PW PRF 级数， 如果有3级，下面代表可以设置 0 ～ 2， 如果<=1，则代表不能设置
 - (int)getPWPRFLevels;
 - (NSArray<NSString*>*)getPWPRFList;
-/// Set PW PRF
+/// 设置PW PRF
 - (void)setPWPRFIndex:(int)index;
 - (int)getPWPRFIndex;
 
-/// Set PW  Volume  0 ~ 2
+/// 设置PW  Volume  0 ~ 2
 - (void)setPWVolumeIndex:(int)index;
 - (int)getPWVolumeIndex;
 - (NSArray<NSString*>*)getPWVolumeList;
 
-/// Set PW Angle  -90 <  Angle  < 90
+/// 设置PW Angle  -90 <  Angle  < 90
 - (void)setPWAngle:(int)angle;
 - (int)getPWAngle;
 
@@ -227,20 +241,25 @@ typedef enum : NSUInteger {
        |------ 1
        |------ 2
  */
-/// Set PW Base line  0 ~ 4
+/// 设置 PW 基线  0 ~ 4
 - (void)setPWBaseLine:(int)baseline;
 - (int)getPWBaseLine;
 
 
-/// Whether the point is within the PW sampling area or not, the converted relative coordinates need to be used
+/// 点是否在 PW 采样区内，需要使用转换过的相对坐标
 - (BOOL)onTouchInPW:(CGPoint)point;
 
 
-///  Get the current B scale in millimeters per pixel
+///  获取当前黑白超区域比例 单位： 毫米 / 像素
 - (float)getCurrentBScale;
-///  Get the current PW spectral area velocity scale in (cm/s) / pixels
+///  获取当前PW频谱区域速度比例  单位：（  厘米 / 秒） / 像素
 - (float)getCurrentPWVelocityScale;
-///  Get the current PW spectral area time scale in seconds/pixel
+///  获取当前PW频谱区域时间比例  单位：  秒 / 像素
 - (float)getCurrentPWTimeScale;
+
+/// 设置图像左右翻转 （非BM模式）
+- (void)setHorizontalReversal:(BOOL)reversal;
+/// 设置图像上下翻转 （非BM模式）
+- (void)setVerticalReversal:(BOOL)reversal;
 
 @end
